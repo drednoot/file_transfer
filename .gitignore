@@ -1,0 +1,6 @@
+*.stash
+*.o
+*.a
+*.mk
+compile_commands.json
+src/build
