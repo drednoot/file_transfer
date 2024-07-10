@@ -2,23 +2,23 @@ CC=gcc -std=c++17
 CXXFLAGS=-Wall -Werror -Wextra -lstdc++ -g
 BUILD_DIR=build
 
-all: server client
+all: build_server build_client
 
-server: server.pro
+build_server: server.pro
 	qmake -o server.mk server.pro
 	make -f server.mk all
 
-client: client.pro
+build_client: client.pro
 	qmake -o client.mk client.pro
 	make -f client.mk all
 
 uninstall: clean
 	rm -rf $(BUILD_DIR)
 
-run_server: server
+run_server: build_server
 	$(BUILD_DIR)/server/server
 
-run_client: client
+run_client: build_client
 	$(BUILD_DIR)/client/client
 
 clean:
