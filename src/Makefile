@@ -16,10 +16,10 @@ uninstall: clean
 	rm -rf $(BUILD_DIR)
 
 run_server: server
-	$(BUILD_DIR)/server
+	$(BUILD_DIR)/server/server
 
 run_client: client
-	$(BUILD_DIR)/client
+	$(BUILD_DIR)/client/client
 
 clean:
-	-rm -rf $(BUILD_DIR)/moc $(BUILD_DIR)/obj *.o *.gcno *.gcda *.info *.gcov *.a *.dSYM report *.out *.mk
+	-rm -rf $(BUILD_DIR)/*/moc $(BUILD_DIR)/*/obj *.o *.gcno *.gcda *.info *.gcov *.a *.dSYM report *.out *.mk files

@@ -10,9 +10,9 @@ SOURCES+=                \
 HEADERS+=                \
 				server/server.h  \
 
-DESTDIR     = build/
-MOC_DIR		  = build/moc
-OBJECTS_DIR = build/obj
+DESTDIR     = build/server
+MOC_DIR		  = build/server/moc
+OBJECTS_DIR = build/server/obj
 
 
 qnx: target.path = /tmp/$${TARGET}/bin

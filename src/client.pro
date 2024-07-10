@@ -6,9 +6,9 @@ CONFIG+=c++17
 SOURCES+=                                   \
 				client/main.cc
 
-DESTDIR     = build/
-MOC_DIR		  = build/moc
-OBJECTS_DIR = build/obj
+DESTDIR     = build/client
+MOC_DIR		  = build/client/moc
+OBJECTS_DIR = build/client/obj
 
 
 qnx: target.path = /tmp/$${TARGET}/bin
