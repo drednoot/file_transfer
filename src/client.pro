@@ -1,10 +1,14 @@
-QT+=core gui
+QT+=core gui network
 greaterThan(QT_MAJOR_VERSION, 4): QT+=widgets
 
 CONFIG+=c++17
 
 SOURCES+=                                   \
-				client/main.cc
+				client/main.cc                      \
+				client/client.cc                    \
+
+HEADERS+=                                   \
+				client/client.h                     \
 
 DESTDIR     = build/client
 MOC_DIR		  = build/client/moc
