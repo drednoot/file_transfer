@@ -3,6 +3,7 @@
 
 #include <QDir>
 #include <QList>
+#include <QMutex>
 #include <QString>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -21,14 +22,21 @@ public:
   explicit Server(QWidget *parent = nullptr, const int port = 1512,
                   const QString &files_path = "./files/");
 
+public slots:
+  void AddConnection();
+  void RemoveFromConnected();
+
 private:
   bool InitServer();
   bool InitFilesFolder(const QString &files_path);
   void InflateFiles();
 
+  void SendTableData(QTcpSocket *sock);
+
   QTcpServer *qtcp_serv_;
   const int port_;
   QDir files_;
+  QMutex connected_lock_;
   QList<QTcpSocket *> connected_;
   QList<FileInfo> file_infos_;
 };

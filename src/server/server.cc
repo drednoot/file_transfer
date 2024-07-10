@@ -1,15 +1,23 @@
 #include "server.h"
 
+#include <QByteArray>
+#include <QDataStream>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QFileInfoList>
 #include <QHostAddress>
+#include <QIODevice>
 #include <QMessageBox>
+#include <QObject>
 #include <QString>
 #include <QTcpServer>
+#include <QTcpSocket>
 #include <QTimeZone>
 #include <QWidget>
+
+// TODO remove this
+#include <QDebug>
 
 Server::Server(QWidget *parent, const int port, const QString &files_path)
     : QWidget(parent), port_(port) {
@@ -30,6 +38,9 @@ bool Server::InitServer() {
         tr("Unable to start the server: %1.").arg(qtcp_serv_->errorString()));
     return false;
   }
+
+  QObject::connect(qtcp_serv_, &QTcpServer::newConnection, this,
+                   &Server::AddConnection);
 
   return true;
 }
@@ -68,4 +79,42 @@ void Server::InflateFiles() {
       file_infos_.append(serializable_info);
     }
   }
+}
+
+void Server::AddConnection() {
+  QTcpSocket *sock = qtcp_serv_->nextPendingConnection();
+
+  connected_lock_.lock();
+  connected_.append(sock);
+  connected_lock_.unlock();
+
+  QObject::connect(sock, &QTcpSocket::disconnected, this,
+                   &Server::RemoveFromConnected);
+
+  sock->waitForConnected();
+  SendTableData(sock);
+}
+
+void Server::RemoveFromConnected() {
+  QTcpSocket *snd = (QTcpSocket *)sender();
+
+  connected_lock_.lock();
+  connected_.removeOne(snd);
+  connected_lock_.unlock();
+
+  snd->deleteLater();
+}
+
+void Server::SendTableData(QTcpSocket *sock) {
+  QByteArray block;
+  QDataStream out(&block, QIODevice::WriteOnly);
+  out.setVersion(QDataStream::Qt_5_0);
+
+  for (auto info : file_infos_) {
+    out << info.name << info.unix_time;
+    qDebug() << info.name << info.unix_time;
+  }
+
+  sock->write(block);
+  qDebug() << "sent";
 }
