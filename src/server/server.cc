@@ -56,13 +56,16 @@ bool Server::InitFilesFolder(const QString &files_path) {
 
 void Server::InflateFiles() {
   QFileInfoList server_files = files_.entryInfoList();
+
   for (int i = 0; i < server_files.size(); ++i) {
-    QFileInfo info = server_files.at(0);
+    QFileInfo info = server_files.at(i);
     FileInfo serializable_info = {
         .name = info.fileName(),
         .unix_time = info.birthTime().toSecsSinceEpoch(),
     };
 
-    file_infos_.append(serializable_info);
+    if (info.isFile()) {
+      file_infos_.append(serializable_info);
+    }
   }
 }
