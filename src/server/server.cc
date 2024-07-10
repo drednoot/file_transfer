@@ -1,8 +1,5 @@
 #include "server.h"
 
-// TODO remove iostream
-#include <iostream>
-
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
@@ -23,11 +20,6 @@ Server::Server(QWidget *parent, const int port, const QString &files_path)
     return;
   }
   InflateFiles();
-
-  // TODO remove
-  for (auto it : file_infos_) {
-    std::cout << it.name.toStdString() << ": " << it.unix_time << std::endl;
-  }
 }
 
 bool Server::InitServer() {
