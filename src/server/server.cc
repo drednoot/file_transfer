@@ -15,6 +15,7 @@
 #include <QTcpSocket>
 #include <QTimeZone>
 #include <QWidget>
+#include <QtGlobal>
 
 // TODO remove this
 #include <QDebug>
@@ -110,11 +111,12 @@ void Server::SendTableData(QTcpSocket *sock) {
   QDataStream out(&block, QIODevice::WriteOnly);
   out.setVersion(QDataStream::Qt_5_0);
 
+  out << (quint8)'T';
+  out << (quint32)file_infos_.size();
   for (auto info : file_infos_) {
     out << info.name << info.unix_time;
     qDebug() << info.name << info.unix_time;
   }
 
   sock->write(block);
-  qDebug() << "sent";
 }

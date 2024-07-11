@@ -1,6 +1,7 @@
 #ifndef FILE_TRANSFER_SERVER_SERVER_H_
 #define FILE_TRANSFER_SERVER_SERVER_H_
 
+#include <QDataStream>
 #include <QDir>
 #include <QList>
 #include <QMutex>

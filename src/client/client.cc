@@ -50,13 +50,29 @@ void View::Connected() {
   connect_btn_->setText("connected");
 }
 
-void View::ReadTableData() {
+void View::Disconnected() {
+  connect_btn_->setDisabled(false);
+  connect_btn_->setText("connect");
+}
+
+void View::ParseMessage() {
   in_.startTransaction();
 
-  while (!in_.atEnd()) {
-    FileInfo test;
-    in_ >> test.name >> test.unix_time;
-    qDebug() << test.name << ": " << test.unix_time;
+  quint8 signature;
+  in_ >> signature;
+  qDebug() << "signature:" << (char)signature;
+
+  switch (signature) {
+  case 'T':
+    ReadTableData();
+    break;
+  case 'D':
+    // TODO
+    qDebug() << "Operation was not yet implemented";
+    break;
+  default:
+    qDebug() << "Unknown operation";
+    break;
   }
 
   in_.commitTransaction();

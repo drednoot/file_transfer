@@ -27,16 +27,19 @@ public:
 
   explicit View(QWidget *parent = nullptr);
 
-  void Connect();
-
-public slots:
-  void HandleError(QAbstractSocket::SocketError error);
+  void ConnectSocketSignals();
 
 private slots:
+  void Connect();
   void Connected();
+  void Disconnected();
+  void HandleError(QAbstractSocket::SocketError error);
 
 private:
+  void ParseMessage();
   void ReadTableData();
+
+  void AddTableRow(FileInfo info, int index);
 
   QTableWidget *main_table_;
   QVBoxLayout *main_layout_;
