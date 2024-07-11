@@ -2,10 +2,12 @@
 
 #include <QAbstractSocket>
 #include <QDataStream>
+#include <QDateTime>
 #include <QIODevice>
 #include <QObject>
 #include <QPushButton>
 #include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QTcpSocket>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -23,13 +25,22 @@ View::View(QWidget *parent)
   setLayout(main_layout_);
   QObject::connect(connect_btn_, &QPushButton::pressed, this, &View::Connect);
 
-  QObject::connect(sock_, &QAbstractSocket::errorOccurred, this,
-                   &View::HandleError);
-  QObject::connect(sock_, &QAbstractSocket::connected, this, &View::Connected);
-  QObject::connect(sock_, &QIODevice::readyRead, this, &View::ReadTableData);
+  ConnectSocketSignals();
 
   in_.setDevice(sock_);
   in_.setVersion(QDataStream::Qt_5_0);
+
+  main_table_->setColumnCount(3);
+  main_table_->setHorizontalHeaderLabels({"Name", "Link", "Upload Date"});
+}
+
+void View::ConnectSocketSignals() {
+  QObject::connect(sock_, &QAbstractSocket::errorOccurred, this,
+                   &View::HandleError);
+  QObject::connect(sock_, &QAbstractSocket::connected, this, &View::Connected);
+  QObject::connect(sock_, &QAbstractSocket::disconnected, this,
+                   &View::Disconnected);
+  QObject::connect(sock_, &QIODevice::readyRead, this, &View::ParseMessage);
 }
 
 void View::Connect() { sock_->connectToHost("127.0.0.1", 1512); }
@@ -49,6 +60,32 @@ void View::ReadTableData() {
   }
 
   in_.commitTransaction();
+}
+
+void View::ReadTableData() {
+  main_table_->clear();
+
+  quint32 row_count;
+  in_ >> row_count;
+  qDebug() << "row count" << row_count;
+  main_table_->setRowCount(row_count);
+  for (quint32 i = 0; i < row_count; ++i) {
+    FileInfo info;
+    in_ >> info.name >> info.unix_time;
+    AddTableRow(info, i);
+  }
+}
+
+void View::AddTableRow(FileInfo info, int index) {
+  QTableWidgetItem *name = new QTableWidgetItem(info.name);
+  QTableWidgetItem *link = new QTableWidgetItem("Link to a document");
+
+  QDateTime date_time = QDateTime::fromSecsSinceEpoch(info.unix_time);
+  QTableWidgetItem *date = new QTableWidgetItem(date_time.toString());
+
+  main_table_->setItem(index, 0, name);
+  main_table_->setItem(index, 1, link);
+  main_table_->setItem(index, 2, date);
 }
 
 void View::HandleError(QAbstractSocket::SocketError error) {
