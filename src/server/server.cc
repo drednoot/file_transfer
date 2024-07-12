@@ -1,5 +1,4 @@
 #include "server.h"
-#include "download_thread.h"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -83,7 +82,7 @@ void Server::InflateFiles() {
     };
 
     if (info.isFile()) {
-      file_infos_.append(serializable_info);
+      file_infos_[info.fileName()] = serializable_info;
     }
   }
 }
@@ -132,28 +131,120 @@ void Server::SendTableDataToAll() {
 }
 
 void Server::ParseMessage() {
-  QTcpSocket *snd = (QTcpSocket *)sender();
-  QDataStream in(snd);
-  in.setVersion(QDataStream::Qt_5_0);
-  in.startTransaction();
+  QTcpSocket *sock = (QTcpSocket *)sender();
 
   quint8 signature;
-  in >> signature;
+  sock->read((char *)&signature, sizeof(quint8));
 
-  if (signature == (char)'F') {
-    AcceptFile(in, snd->socketDescriptor());
+  if (signature == (char)'U') {
+    AcceptFile(sock);
+  } else if (signature == (char)'D') {
+    UploadFile(sock);
   }
 }
 
-void Server::AcceptFile(QDataStream &in, qintptr sock_fd) {
-  DownloadThread *thread = new DownloadThread(in, sock_fd, files_, this);
-  QObject::connect(thread, &DownloadThread::NewFileAdded, this,
-                   &Server::AddNewFile);
-  QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-  thread->start();
+void Server::AcceptFile(QTcpSocket *sock) {
+  QDataStream in(sock);
+  in.setVersion(QDataStream::Qt_5_0);
+
+  QString filename;
+  in >> filename;
+
+  qint64 size;
+  in >> size;
+
+  QFile file = files_.filePath(filename);
+  if (file.exists()) {
+    SendError(tr("File with name '%1' already exists").arg(filename), sock);
+    return;
+  }
+
+  qint64 received = 0;
+  file.open(QIODevice::WriteOnly);
+  while (received < size) {
+    qint64 remainder = size - received;
+    qint64 to_read = remainder < 8192 ? remainder : 8192;
+    QByteArray buf = sock->read(to_read);
+    received += file.write(buf);
+    if (buf.isEmpty()) {
+      if (!sock->waitForReadyRead()) {
+        break;
+      }
+    }
+  }
+
+  QFileInfo qinfo(file);
+  FileInfo info = {.name = filename,
+                   .unix_time = qinfo.birthTime().toSecsSinceEpoch()};
+
+  file.close();
+  AddNewFile(info);
+
+  SendOk(sock);
+  SendTableDataToAll();
+}
+
+void Server::UploadFile(QTcpSocket *sock) {
+  QDataStream in(sock);
+  in.setVersion(QDataStream::Qt_5_0);
+
+  QString filename;
+  in >> filename;
+
+  if (!file_infos_.contains(filename)) {
+    SendError(tr("Filename '%1' doesn't exist").arg(filename), sock);
+    return;
+  }
+
+  QByteArray block;
+  QDataStream out(&block, QIODevice::WriteOnly);
+  out.setVersion(QDataStream::Qt_5_0);
+
+  QString filepath = files_.absoluteFilePath(filename);
+  QFile file(filepath);
+  QFileInfo info(file);
+
+  qint64 size = info.size();
+  out << (quint8)'F';
+  out << (qint64)size;
+  file.open(QIODevice::ReadOnly);
+  sock->write(block);
+  sock->waitForBytesWritten();
+
+  qint64 sent = 0;
+  while (sent < size) {
+    QByteArray buf = file.read(8192);
+    sent += sock->write(buf.data(), buf.size());
+    sock->waitForBytesWritten();
+  }
+
+  file.close();
+}
+
+void Server::SendError(const QString &message, QTcpSocket *sock) {
+  QByteArray block;
+  QDataStream out(&block, QIODevice::WriteOnly);
+  out.setVersion(QDataStream::Qt_5_0);
+
+  out << (quint8)'E';
+  out << message;
+
+  sock->write(block);
+  sock->waitForBytesWritten();
+}
+
+void Server::SendOk(QTcpSocket *sock) {
+  QByteArray block;
+  QDataStream out(&block, QIODevice::WriteOnly);
+  out.setVersion(QDataStream::Qt_5_0);
+
+  out << (quint8)'O';
+
+  sock->write(block);
+  sock->waitForBytesWritten();
 }
 
 void Server::AddNewFile(FileInfo info) {
-  file_infos_.append(info);
+  file_infos_[info.name] = info;
   SendTableDataToAll();
 }

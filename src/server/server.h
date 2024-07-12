@@ -4,6 +4,7 @@
 #include <QDataStream>
 #include <QDir>
 #include <QList>
+#include <QMap>
 #include <QMutex>
 #include <QString>
 #include <QTcpServer>
@@ -38,13 +39,16 @@ private:
   void SendTableDataToAll();
   void AddNewFile(FileInfo info);
 
-  void AcceptFile(QDataStream &in, qintptr sock_fd);
+  void AcceptFile(QTcpSocket *sock);
+  void UploadFile(QTcpSocket *sock);
+  void SendError(const QString &message, QTcpSocket *sock);
+  void SendOk(QTcpSocket *sock);
 
   QTcpServer *qtcp_serv_;
   const int port_;
   QDir files_;
   QList<QTcpSocket *> connected_;
-  QList<FileInfo> file_infos_;
+  QMap<QString, FileInfo> file_infos_;
 };
 
 #endif // FILE_TRANSFER_SERVER_SERVER_H_

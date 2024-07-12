@@ -26,6 +26,12 @@ public:
     qint64 unix_time;
   };
 
+  enum ClientState {
+    kDisconnected,
+    kConnected,
+    kLoading,
+  };
+
   explicit View(QWidget *parent = nullptr);
 
   void ConnectSocketSignals();
@@ -36,16 +42,19 @@ private slots:
   void Disconnected();
   void HandleError(QAbstractSocket::SocketError error);
   void UploadFile();
+  void QueryDownloadFile();
+  void HighlightDownloadButton();
 
 private:
   void ParseMessage();
   void ReadTableData();
   void ParseError();
+  void DownloadFile();
 
   void AddTableRow(FileInfo info, int index);
 
-  void SetButtonsUploadingState();
-  void SetButtonsDefaultState();
+  void SetButtonsLoadingState();
+  void SetButtonsDisconnectedState();
   void SetButtonsConnectedState();
 
   QTableWidget *main_table_;
@@ -54,8 +63,14 @@ private:
   QTcpSocket *sock_;
   QPushButton *connect_btn_;
   QPushButton *upload_btn_;
+  QPushButton *download_btn_;
 
   QDataStream in_;
+
+  QString download_place_;
+  QString selected_item_;
+
+  ClientState state_;
 };
 
 #endif // FILE_TRANSFER_CLIENT_CLIENT_H_
