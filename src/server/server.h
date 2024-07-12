@@ -11,21 +11,23 @@
 #include <QWidget>
 #include <QtGlobal>
 
+struct FileInfo {
+  QString name;
+  qint64 unix_time;
+};
+Q_DECLARE_METATYPE(FileInfo)
+
 class Server : public QWidget {
   Q_OBJECT
 
 public:
-  struct FileInfo {
-    QString name;
-    qint64 unix_time;
-  };
-
   explicit Server(QWidget *parent = nullptr, const int port = 1512,
                   const QString &files_path = "./files/");
 
-public slots:
+private slots:
   void AddConnection();
   void RemoveFromConnected();
+  void ParseMessage();
 
 private:
   bool InitServer();
@@ -33,11 +35,14 @@ private:
   void InflateFiles();
 
   void SendTableData(QTcpSocket *sock);
+  void SendTableDataToAll();
+  void AddNewFile(FileInfo info);
+
+  void AcceptFile(QDataStream &in, qintptr sock_fd);
 
   QTcpServer *qtcp_serv_;
   const int port_;
   QDir files_;
-  QMutex connected_lock_;
   QList<QTcpSocket *> connected_;
   QList<FileInfo> file_infos_;
 };

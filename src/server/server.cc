@@ -1,6 +1,8 @@
 #include "server.h"
+#include "download_thread.h"
 
 #include <QByteArray>
+#include <QCoreApplication>
 #include <QDataStream>
 #include <QDateTime>
 #include <QDir>
@@ -13,6 +15,7 @@
 #include <QString>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QThread>
 #include <QTimeZone>
 #include <QWidget>
 #include <QtGlobal>
@@ -37,6 +40,7 @@ bool Server::InitServer() {
     QMessageBox::critical(
         this, tr("File Transfer Server"),
         tr("Unable to start the server: %1.").arg(qtcp_serv_->errorString()));
+    QCoreApplication::quit();
     return false;
   }
 
@@ -52,6 +56,7 @@ bool Server::InitFilesFolder(const QString &files_path) {
     QMessageBox::critical(
         this, tr("File Transfer Server"),
         tr("Unable to start the server: %1.").arg("Couldn't make files dir"));
+    QCoreApplication::quit();
     return false;
   }
 
@@ -59,6 +64,7 @@ bool Server::InitFilesFolder(const QString &files_path) {
     QMessageBox::critical(this, tr("File Transfer Server"),
                           tr("Unable to start the server: %1.")
                               .arg("Couldn't move to files dir"));
+    QCoreApplication::quit();
     return false;
   }
 
@@ -85,12 +91,11 @@ void Server::InflateFiles() {
 void Server::AddConnection() {
   QTcpSocket *sock = qtcp_serv_->nextPendingConnection();
 
-  connected_lock_.lock();
   connected_.append(sock);
-  connected_lock_.unlock();
 
   QObject::connect(sock, &QTcpSocket::disconnected, this,
                    &Server::RemoveFromConnected);
+  QObject::connect(sock, &QTcpSocket::readyRead, this, &Server::ParseMessage);
 
   sock->waitForConnected();
   SendTableData(sock);
@@ -99,9 +104,7 @@ void Server::AddConnection() {
 void Server::RemoveFromConnected() {
   QTcpSocket *snd = (QTcpSocket *)sender();
 
-  connected_lock_.lock();
   connected_.removeOne(snd);
-  connected_lock_.unlock();
 
   snd->deleteLater();
 }
@@ -119,4 +122,38 @@ void Server::SendTableData(QTcpSocket *sock) {
   }
 
   sock->write(block);
+  sock->waitForBytesWritten();
+}
+
+void Server::SendTableDataToAll() {
+  for (auto sock : connected_) {
+    SendTableData(sock);
+  }
+}
+
+void Server::ParseMessage() {
+  QTcpSocket *snd = (QTcpSocket *)sender();
+  QDataStream in(snd);
+  in.setVersion(QDataStream::Qt_5_0);
+  in.startTransaction();
+
+  quint8 signature;
+  in >> signature;
+
+  if (signature == (char)'F') {
+    AcceptFile(in, snd->socketDescriptor());
+  }
+}
+
+void Server::AcceptFile(QDataStream &in, qintptr sock_fd) {
+  DownloadThread *thread = new DownloadThread(in, sock_fd, files_, this);
+  QObject::connect(thread, &DownloadThread::NewFileAdded, this,
+                   &Server::AddNewFile);
+  QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  thread->start();
+}
+
+void Server::AddNewFile(FileInfo info) {
+  file_infos_.append(info);
+  SendTableDataToAll();
 }

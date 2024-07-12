@@ -3,6 +3,7 @@
 
 #include <QAbstractSocket>
 #include <QDataStream>
+#include <QHBoxLayout>
 #include <QObject>
 #include <QPushButton>
 #include <QString>
@@ -34,17 +35,25 @@ private slots:
   void Connected();
   void Disconnected();
   void HandleError(QAbstractSocket::SocketError error);
+  void UploadFile();
 
 private:
   void ParseMessage();
   void ReadTableData();
+  void ParseError();
 
   void AddTableRow(FileInfo info, int index);
 
+  void SetButtonsUploadingState();
+  void SetButtonsDefaultState();
+  void SetButtonsConnectedState();
+
   QTableWidget *main_table_;
   QVBoxLayout *main_layout_;
+  QHBoxLayout *button_layout_;
   QTcpSocket *sock_;
   QPushButton *connect_btn_;
+  QPushButton *upload_btn_;
 
   QDataStream in_;
 };
