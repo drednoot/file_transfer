@@ -4,7 +4,7 @@
 int main(int argc, char **argv) {
   QApplication app(argc, argv);
   Server *server = new Server();
+  (void)server;
 
-  server->show();
   return app.exec();
 }

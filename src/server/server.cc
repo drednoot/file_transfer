@@ -31,6 +31,7 @@ Server::Server(QWidget *parent, const int port, const QString &files_path)
     return;
   }
   InflateFiles();
+  qDebug() << "server started";
 }
 
 bool Server::InitServer() {
