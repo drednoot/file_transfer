@@ -6,11 +6,9 @@ CONFIG+=c++17
 SOURCES+=                \
 				server/main.cc   \
 				server/server.cc \
-				server/dowload_thread.cc \
 
 HEADERS+=                \
 				server/server.h  \
-				server/download_thread.h \
 
 DESTDIR     = build/server
 MOC_DIR		  = build/server/moc
