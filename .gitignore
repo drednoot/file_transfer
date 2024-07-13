@@ -6,3 +6,4 @@
 compile_commands.json
 src/build
 src/files
+*.pro.user
