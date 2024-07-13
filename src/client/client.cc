@@ -82,30 +82,27 @@ void View::Disconnected() {
 }
 
 void View::ParseMessage() {
-  in_.startTransaction();
+  qDebug() << "started parsing message";
 
   quint8 signature;
   in_ >> signature;
 
   switch (signature) {
   case 'T':
+    qDebug() << "read table data";
     ReadTableData();
     break;
   case 'F':
+    qDebug() << "download started";
     DownloadFile();
     break;
   case 'E':
     ParseError();
     break;
-  case 'O':
-    qDebug() << "All OK";
-    break;
   default:
     std::cerr << "Unknown signature " << (char)signature << std::endl;
     break;
   }
-
-  in_.commitTransaction();
 }
 
 void View::ReadTableData() {
@@ -113,12 +110,14 @@ void View::ReadTableData() {
 
   quint32 row_count;
   in_ >> row_count;
+  qDebug() << row_count;
 
   main_table_->setRowCount(row_count);
   for (quint32 i = 0; i < row_count; ++i) {
     FileInfo info;
     in_ >> info.name >> info.unix_time;
     AddTableRow(info, i);
+    qDebug() << i + 1 << info.name << info.unix_time;
   }
 }
 
@@ -167,6 +166,7 @@ void View::UploadFile() {
     sent += sock_->write(buf.data(), buf.size());
     sock_->waitForBytesWritten();
   }
+  sock_->waitForBytesWritten();
 
   file.close();
 
@@ -192,14 +192,13 @@ void View::QueryDownloadFile() {
   out << selected_item_;
   sock_->write(block);
   sock_->waitForBytesWritten();
+  qDebug() << "asked for download";
 }
 
 void View::DownloadFile() {
-  QDataStream in(sock_);
-  in.setVersion(QDataStream::Qt_5_0);
-
   qint64 size;
-  in >> size;
+  in_ >> size;
+  qDebug() << "got size for file" << size;
 
   QFile file(download_place_);
   file.open(QIODevice::WriteOnly);
@@ -217,7 +216,8 @@ void View::DownloadFile() {
     }
   }
 
-  // TODO message box
+  qDebug() << "downloaded";
+  QMessageBox::information(this, "Success", "Download Finished");
 }
 
 void View::SetButtonsLoadingState() {
@@ -239,6 +239,10 @@ void View::SetButtonsConnectedState() {
 }
 
 void View::HighlightDownloadButton() {
+  if (state_ == ClientState::kDisconnected) {
+    return;
+  }
+
   QList<QTableWidgetSelectionRange> ranges = main_table_->selectedRanges();
   if (ranges.isEmpty()) {
     return;
@@ -257,14 +261,13 @@ void View::HighlightDownloadButton() {
 }
 
 void View::HandleError(QAbstractSocket::SocketError error) {
-  qDebug() << error;
-  // TODO implement actual error handling
+  (void)error;
+  QMessageBox::critical(this, "Socket Error!", sock_->errorString());
 }
 
 void View::ParseError() {
   QString message;
   in_ >> message;
 
-  // TODO qmessagebox
-  qDebug() << message;
+  QMessageBox::critical(this, "Server error", message);
 }

@@ -42,7 +42,6 @@ private:
   void AcceptFile(QTcpSocket *sock);
   void UploadFile(QTcpSocket *sock);
   void SendError(const QString &message, QTcpSocket *sock);
-  void SendOk(QTcpSocket *sock);
 
   QTcpServer *qtcp_serv_;
   const int port_;

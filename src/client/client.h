@@ -11,11 +11,7 @@
 #include <QTcpSocket>
 #include <QVBoxLayout>
 #include <QWidget>
-
-// struct ConnectionDetails {
-//   QString host;
-//   QString port;
-// };
+#include <QtGlobal>
 
 class View : public QWidget {
   Q_OBJECT
