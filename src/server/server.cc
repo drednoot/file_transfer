@@ -18,6 +18,7 @@
 #include <QTimeZone>
 #include <QWidget>
 #include <QtGlobal>
+#include <iostream>
 
 // TODO remove this
 #include <QDebug>
@@ -31,7 +32,7 @@ Server::Server(QWidget *parent, const int port, const QString &files_path)
     return;
   }
   InflateFiles();
-  qDebug() << "server started";
+  std::cout << "server started" << std::endl;
 }
 
 bool Server::InitServer() {

@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QIODevice>
 #include <QMessageBox>
 #include <QObject>
@@ -54,6 +55,7 @@ View::View(QWidget *parent)
   main_table_->setColumnCount(3);
   main_table_->setHorizontalHeaderLabels({"Name", "Link", "Upload Date"});
   main_table_->setSelectionMode(QAbstractItemView::SingleSelection);
+  main_table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   QObject::connect(main_table_, &QTableWidget::itemSelectionChanged, this,
                    &View::HighlightDownloadButton);
 
@@ -119,6 +121,7 @@ void View::ReadTableData() {
     AddTableRow(info, i);
     qDebug() << i + 1 << info.name << info.unix_time;
   }
+  main_table_->setHorizontalHeaderLabels({"Name", "Link", "Upload Date"});
 }
 
 void View::AddTableRow(FileInfo info, int index) {
